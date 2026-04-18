@@ -2,134 +2,39 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Extracteur Autonome Vietnamien</title>
+    <title>Suivi des Cours de Vietnamien</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; margin: 20px; background: #f0f2f5; }
-        .container { max-width: 900px; margin: auto; background: white; padding: 25px; border-radius: 12px; shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        h1 { color: #1a73e8; border-bottom: 2px solid #e8f0fe; padding-bottom: 10px; }
-        button { background: #1a73e8; color: white; border: none; padding: 12px 24px; cursor: pointer; border-radius: 6px; font-weight: bold; }
-        button:disabled { background: #ccc; }
-        #log { background: #202124; color: #f1f3f4; padding: 15px; border-radius: 8px; height: 200px; overflow-y: auto; font-family: monospace; font-size: 12px; margin: 20px 0; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { border: 1px solid #dadce0; padding: 12px; text-align: left; }
-        th { background: #f8f9fa; color: #5f6368; }
-        .success { color: #188038; font-weight: bold; }
-        .error { color: #d93025; }
+        body { font-family: sans-serif; margin: 40px; background: #f4f4f9; }
+        .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #007bff; color: white; }
     </style>
 </head>
 <body>
+    <div class="container">
+        <h1>Nombre de cours par prof</h1>
+        <p id="dateUpdate"></p>
+        <table id="resultTable">
+            <thead>
+                <tr><th>Nom</th><th>Nombre de cours</th></tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
 
-<div class="container">
-    <h1>Suivi des Cours (Mode Autonome)</h1>
-    <p>Cette page tente d'extraire les données directement depuis le code source SEO de Preply.</p>
-    
-    <button id="startBtn">Démarrer l'extraction sans Python</button>
-
-    <div id="log">Console prête...</div>
-
-    <table id="resultsTable">
-        <thead>
-            <tr>
-                <th>Professeur</th>
-                <th>Nombre de Cours</th>
-                <th>Méthode / Erreur</th>
-            </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
-</div>
-
-<script>
-
-    const tutors = [
-    {name: "QUYNH", url: "https://preply.com/fr/tuteur/3555405"},
-    {name: "CHI", url: "https://preply.com/fr/tuteur/3788757"},
-    {name: "MAI", url: "https://preply.com/fr/tuteur/5826353"},
-    {name: "HUONG", url: "https://preply.com/fr/tuteur/5590437"},
-    {name: "THU", url: "https://preply.com/fr/tuteur/6100757"},
-    {name: "XUAN", url: "https://preply.com/fr/tuteur/6471628"},
-    {name: "LINH", url: "https://preply.com/fr/tuteur/3621179"},
-    {name: "TRAN", url: "https://preply.com/fr/tuteur/5501608"},
-    {name: "TRANG", url: "https://preply.com/fr/tuteur/6246579"},
-    {name: "YEN", url: "https://preply.com/fr/tuteur/7303777"}
-];
-
-function addLog(msg) {
-    const log = document.getElementById('log');
-    log.innerHTML += `> ${msg}<br>`;
-    log.scrollTop = log.scrollHeight;
-}
-
-async function scrapeTutor(tutor) {
-    try {
-        // CHANGEMENT DE PROXY : Corsproxy.io est souvent plus stable que AllOrigins
-        const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(tutor.url)}`;
-        
-        const response = await fetch(proxyUrl);
-        
-        if (!response.ok) {
-            return { count: "---", info: "Le site Preply refuse l'accès (403/404)" };
-        }
-
-        const html = await response.text(); // On lit en texte brut d'abord pour éviter l'erreur JSON
-
-        if (!html || html.length < 500) {
-            return { count: "---", info: "Réponse vide ou trop courte" };
-        }
-
-        // --- STRATÉGIE DE RECHERCHE DANS LE TEXTE BRUT ---
-        
-        // Recherche de "totalLessons" (très fiable si présent)
-        const regexTotal = /"totalLessons":\s*(\d+)/;
-        const matchTotal = html.match(regexTotal);
-        if (matchTotal && matchTotal[1]) {
-            return { count: matchTotal[1], info: "Trouvé (totalLessons)" };
-        }
-
-        // Recherche de "numberOfLessons"
-        const regexNum = /"numberOfLessons":\s*(\d+)/;
-        const matchNum = html.match(regexNum);
-        if (matchNum && matchNum[1]) {
-            return { count: matchNum[1], info: "Trouvé (numberOfLessons)" };
-        }
-
-        // Recherche textuelle classique
-        const lessonMatch = html.match(/>(\d+)\s+cours/i);
-        if (lessonMatch) return { count: lessonMatch[1], info: "Trouvé (Texte)" };
-
-        return { count: "Non trouvé", info: "Données absentes du code source" };
-
-    } catch (e) {
-        return { count: "Erreur", info: "Erreur technique : " + e.message };
-    }
-}
-
-document.getElementById('startBtn').addEventListener('click', async () => {
-    const btn = document.getElementById('startBtn');
-    btn.disabled = true;
-    document.querySelector('#resultsTable tbody').innerHTML = "";
-    addLog("Lancement de l'extraction...");
-
-    for (let tutor of tutors) {
-        addLog(`Analyse de ${tutor.name}...`);
-        const res = await scrapeTutor(tutor);
-        
-        const row = `<tr>
-            <td>${tutor.name}</td>
-            <td style="font-weight:bold">${res.count}</td>
-            <td>${res.info}</td>
-        </tr>`;
-        document.querySelector('#resultsTable tbody').innerHTML += row;
-        
-        // Pause de 1.5 seconde pour éviter d'être banni par le proxy
-        await new Promise(r => setTimeout(r, 1500));
-    }
-
-    addLog("Extraction terminée.");
-    btn.disabled = false;
-});
-    
-</script>
+    <script>
+        // On charge le fichier JSON généré par le script Python
+        fetch('data.json')
+            .then(response => response.json())
+            .then(data => {
+                const tbody = document.querySelector('#resultTable tbody');
+                data.forEach(item => {
+                    const row = `<tr><td>${item.name}</td><td>${item.count}</td></tr>`;
+                    tbody.innerHTML += row;
+                });
+            })
+            .catch(error => console.error('Erreur:', error));
+    </script>
 </body>
 </html>
