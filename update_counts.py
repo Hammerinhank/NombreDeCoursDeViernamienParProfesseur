@@ -1,4 +1,5 @@
 import json
+from datetime import datetime # Ajout de l'import
 from playwright.sync_api import sync_playwright
 
 tutors = [
@@ -37,6 +38,11 @@ def get_counts():
     return results
 
 if __name__ == "__main__":
-    data = get_counts()
+    results = get_counts()
+    # On crée un dictionnaire qui contient la date ET les résultats
+    final_data = {
+        "last_update": datetime.now().strftime("%d/%m/%Y à %H:%M"),
+        "tutors": results
+    }
     with open("data.json", "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=4)
+        json.dump(final_data, f, ensure_ascii=False, indent=4)
