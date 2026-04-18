@@ -62,34 +62,33 @@ function addLog(msg) {
 
 async function fetchCourseCount(tutor) {
     try {
-        // Utilisation d'un proxy pour contourner CORS
         const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(tutor.url)}`;
         const response = await fetch(proxyUrl);
         const data = await response.json();
         const html = data.contents;
 
-        // Analyse simplifiée du HTML (équivalent BeautifulSoup)
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
         
-        // On cherche les structures contenant "cours"
         let count = "Non trouvé";
-        const containers = doc.querySelectorAll('div');
         
-        for (let div of containers) {
-            const h4 = div.querySelector('h4');
-            const span = div.querySelector('span');
-            if (h4 && span && span.textContent.toLowerCase().includes('cours')) {
-                const num = h4.textContent.replace(/\s/g, '').replace('\u202f', '');
-                if (!isNaN(parseInt(num))) {
-                    count = parseInt(num);
+        // Tentative 1 : Recherche par mot clé "cours" dans tout le texte
+        const allElements = doc.querySelectorAll('h4, span, div, p');
+        for (let el of allElements) {
+            const text = el.textContent.toLowerCase();
+            if (text.includes('cours') && !text.includes('langue')) {
+                // On cherche un chiffre dans le texte ou l'élément parent
+                const match = el.innerText.match(/(\d[\d\s\u202f]*)/);
+                if (match) {
+                    count = match[0].replace(/\s/g, '').replace('\u202f', '');
                     break;
                 }
             }
         }
-        return { count, status: "✅ OK" };
+        
+        return { count, status: count !== "Non trouvé" ? "✅ OK" : "⚠️ Bloqué par Preply" };
     } catch (e) {
-        return { count: "Erreur", status: "❌ Bloqué/Erreur" };
+        return { count: "Erreur", status: "❌ Erreur Réseau" };
     }
 }
 
