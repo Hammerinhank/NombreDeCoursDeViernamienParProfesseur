@@ -3,35 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Diagnostic Suivi Vietnamien</title>
+    <title>Analyseur Précis Preply</title>
     <style>
-        body { font-family: sans-serif; margin: 20px; line-height: 1.6; }
-        .container { max-width: 900px; margin: auto; }
-        button { background: #007bff; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 5px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background: #f4f7f6; }
+        .container { max-width: 1000px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
+        button { background: #007bff; color: white; border: none; padding: 12px 25px; cursor: pointer; border-radius: 5px; font-size: 16px; transition: 0.3s; }
+        button:hover { background: #0056b3; }
         button:disabled { background: #ccc; }
-        #log { width: 100%; height: 350px; margin-top: 20px; font-family: monospace; background: #1e1e1e; color: #adadad; border: 1px solid #333; padding: 15px; overflow-y: auto; font-size: 12px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background-color: #f2f2f2; }
-        .error-detail { color: #ff6b6b; font-weight: bold; }
+        #log { width: 100%; height: 250px; margin-top: 20px; font-family: 'Courier New', monospace; background: #2c3e50; color: #ecf0f1; padding: 15px; overflow-y: auto; border-radius: 5px; font-size: 13px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background-color: #007bff; color: white; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        .status-box { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        .fail { background: #ffebee; color: #c62828; }
+        .success { background: #e8f5e9; color: #2e7d32; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>Compteur de Cours - Diagnostic Précis</h1>
-    <p>Cette version analyse le contenu exact reçu pour identifier le blocage.</p>
+    <h1>Analyseur de structure HTML (Preply)</h1>
+    <p>Ce script tente d'extraire le nombre de cours et explique précisément pourquoi il échoue le cas échéant.</p>
     
-    <button id="startBtn">Lancer l'analyse détaillée</button>
+    <button id="startBtn">Lancer l'autopsie de la page</button>
 
-    <div id="log">Console de diagnostic prête...</div>
+    <div id="log">Prêt pour l'analyse...</div>
 
     <table id="resultsTable">
         <thead>
             <tr>
-                <th>Nom</th>
-                <th>Cours</th>
-                <th>Raison Précise du Statut</th>
+                <th>Professeur</th>
+                <th>Résultat</th>
+                <th>Explication Technique (Pourquoi ?)</th>
             </tr>
         </thead>
         <tbody></tbody>
@@ -56,9 +61,9 @@ const log = document.getElementById('log');
 const btn = document.getElementById('startBtn');
 const tbody = document.querySelector('#resultsTable tbody');
 
-function addLog(msg, isError = false) {
-    const color = isError ? "#ff6b6b" : "#4caf50";
-    log.innerHTML += `<span style="color: ${color}">></span> ${msg}<br>`;
+function addLog(msg) {
+    const time = new Date().toLocaleTimeString();
+    log.innerHTML += `[${time}] ${msg}<br>`;
     log.scrollTop = log.scrollHeight;
 }
 
@@ -69,36 +74,33 @@ async function fetchCourseCount(tutor) {
         const data = await response.json();
         const html = data.contents;
 
-        if (!html) return { count: "---", reason: "Le proxy a renvoyé un contenu vide." };
+        if (!html) return { count: "---", reason: "ERREUR : Le proxy n'a rien renvoyé." };
 
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
 
-        // --- ANALYSE DE LA RAISON DU BLOCAGE ---
+        // --- TESTS DE STRUCTURE ---
         
-        // 1. Détection Cloudflare (Protection Bot)
-        if (html.includes("cf-challenge") || html.includes("ray-id") || html.includes("just a moment")) {
-            return { count: "Bloqué", reason: "Interception Cloudflare (Vérification 'Êtes-vous un robot ?')" };
+        // Test 1: Est-ce que la page est protégée ?
+        if (html.includes("cf-challenge") || html.includes("Cloudflare")) {
+            return { count: "BLOQUÉ", reason: "PROTECTION : Cloudflare bloque l'accès automatique." };
         }
 
-        // 2. Détection de page d'erreur spécifique Preply
-        if (doc.title.includes("403") || doc.title.includes("Forbidden") || html.includes("Access Denied")) {
-            return { count: "Refusé", reason: "Accès refusé par Preply (403 Forbidden)" };
+        // Test 2: Est-ce que les balises <h4> existent ?
+        const allH4 = doc.querySelectorAll('h4');
+        if (allH4.length === 0) {
+            return { count: "VIDE", reason: "STRUCTURE : Aucune balise titre (H4) trouvée. Preply a peut-être changé ses balises en H5 ou DIV." };
         }
 
-        // 3. Détection de structure HTML vide (JavaScript non exécuté)
-        const appRoot = doc.querySelector('#__next') || doc.querySelector('main');
-        if (appRoot && appRoot.innerHTML === "") {
-            return { count: "Invisible", reason: "Contenu généré par JavaScript (Invisible pour ce script)" };
-        }
-
-        // --- TENTATIVE D'EXTRACTION SI PAS DE BLOCAGE ---
+        // Test 3: Recherche du mot "cours"
+        let foundLabel = false;
         let count = null;
-        const containers = doc.querySelectorAll('div');
-        for (let div of containers) {
-            const h4 = div.querySelector('h4');
-            const span = div.querySelector('span');
-            if (h4 && span && span.textContent.toLowerCase().includes('cours')) {
+        
+        for (let h4 of allH4) {
+            // On cherche dans le parent ou le frère pour trouver le texte "cours"
+            const parent = h4.parentElement;
+            if (parent.textContent.toLowerCase().includes('cours')) {
+                foundLabel = true;
                 const num = h4.textContent.replace(/\s/g, '').replace('\u202f', '');
                 if (!isNaN(parseInt(num))) {
                     count = parseInt(num);
@@ -108,9 +110,46 @@ async function fetchCourseCount(tutor) {
         }
 
         if (count !== null) {
-            return { count, reason: "✅ Succès" };
-        } else {
-            // Diagnostic final : si on a du texte mais pas le chiffre
-            const bodyText = doc.body.innerText;
-            if (bodyText.length < 500) {
-                return { count: "Partiel", reason: "Page tron
+            return { count, reason: "SUCCÈS : Donnée extraite normalement." };
+        } 
+        
+        if (foundLabel) {
+            return { count: "?", reason: "FORMAT : Le mot 'cours' est présent, mais le chiffre à côté est illisible ou masqué." };
+        }
+
+        return { count: "PERDU", reason: "RECHERCHE : La page est chargée mais le texte 'cours' n'est pas associé à un chiffre dans la structure actuelle." };
+
+    } catch (e) {
+        return { count: "CRASH", reason: "LOGICIEL : Erreur JavaScript -> " + e.message };
+    }
+}
+
+btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    log.innerHTML = "";
+    tbody.innerHTML = "";
+    addLog("Début de l'autopsie des pages Preply...");
+
+    for (const tutor of tutors) {
+        addLog(`Analyse technique de : ${tutor.name}...`);
+        const result = await fetchCourseCount(tutor);
+        
+        const statusClass = result.count !== "BLOQUÉ" && !isNaN(result.count) ? "success" : "fail";
+        
+        const row = `<tr>
+            <td><strong>${tutor.name}</strong></td>
+            <td><span class="status-box ${statusClass}">${result.count}</span></td>
+            <td>${result.reason}</td>
+        </tr>`;
+        tbody.innerHTML += row;
+        
+        await new Promise(r => setTimeout(r, 800));
+    }
+
+    addLog("Analyse terminée.");
+    btn.disabled = false;
+});
+</script>
+
+</body>
+</html>
