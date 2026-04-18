@@ -41,7 +41,8 @@
 </div>
 
 <script>
-const tutors = [
+
+    const tutors = [
     {name: "QUYNH", url: "https://preply.com/fr/tuteur/3555405"},
     {name: "CHI", url: "https://preply.com/fr/tuteur/3788757"},
     {name: "MAI", url: "https://preply.com/fr/tuteur/5826353"},
@@ -62,45 +63,45 @@ function addLog(msg) {
 
 async function scrapeTutor(tutor) {
     try {
-        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(tutor.url)}`;
-        const response = await fetch(proxyUrl);
-        const data = await response.json();
-        const html = data.contents;
-
-        if (!html) return { count: "---", info: "Proxy bloqué" };
-
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
-
-        // STRATÉGIE 1 : Recherche dans le texte brut avec une REGEX (plus puissant que chercher des balises)
-        // On cherche un chiffre suivi de "cours" ou "lessons"
-        const regex = /"totalLessons":\s*(\d+)/; 
-        const matchJson = html.match(regex);
+        // CHANGEMENT DE PROXY : Corsproxy.io est souvent plus stable que AllOrigins
+        const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(tutor.url)}`;
         
-        if (matchJson && matchJson[1]) {
-            return { count: matchJson[1], info: "Extrait via Data-JSON" };
+        const response = await fetch(proxyUrl);
+        
+        if (!response.ok) {
+            return { count: "---", info: "Le site Preply refuse l'accès (403/404)" };
         }
 
-        // STRATÉGIE 2 : Recherche dans les balises scripts SEO
-        const scripts = doc.querySelectorAll('script[type="application/ld+json"]');
-        for (let s of scripts) {
-            if (s.textContent.includes('totalLessons') || s.textContent.includes('interactionCount')) {
-                const data = JSON.parse(s.textContent);
-                // La structure varie, on tente de deviner
-                const lessons = data.mainEntity?.interactionStatistic?.userInteractionCount;
-                if (lessons) return { count: lessons, info: "Extrait via SEO-JSON" };
-            }
+        const html = await response.text(); // On lit en texte brut d'abord pour éviter l'erreur JSON
+
+        if (!html || html.length < 500) {
+            return { count: "---", info: "Réponse vide ou trop courte" };
         }
 
-        // STRATÉGIE 3 : Analyse du texte visible simplifié
-        const bodyText = doc.body.innerText || "";
-        const lessonMatch = bodyText.match(/(\d+)\s+cours/i);
-        if (lessonMatch) return { count: lessonMatch[1], info: "Trouvé dans le texte" };
+        // --- STRATÉGIE DE RECHERCHE DANS LE TEXTE BRUT ---
+        
+        // Recherche de "totalLessons" (très fiable si présent)
+        const regexTotal = /"totalLessons":\s*(\d+)/;
+        const matchTotal = html.match(regexTotal);
+        if (matchTotal && matchTotal[1]) {
+            return { count: matchTotal[1], info: "Trouvé (totalLessons)" };
+        }
 
-        return { count: "Non trouvé", info: "Données masquées par Preply" };
+        // Recherche de "numberOfLessons"
+        const regexNum = /"numberOfLessons":\s*(\d+)/;
+        const matchNum = html.match(regexNum);
+        if (matchNum && matchNum[1]) {
+            return { count: matchNum[1], info: "Trouvé (numberOfLessons)" };
+        }
+
+        // Recherche textuelle classique
+        const lessonMatch = html.match(/>(\d+)\s+cours/i);
+        if (lessonMatch) return { count: lessonMatch[1], info: "Trouvé (Texte)" };
+
+        return { count: "Non trouvé", info: "Données absentes du code source" };
 
     } catch (e) {
-        return { count: "Erreur", info: e.message };
+        return { count: "Erreur", info: "Erreur technique : " + e.message };
     }
 }
 
@@ -108,7 +109,7 @@ document.getElementById('startBtn').addEventListener('click', async () => {
     const btn = document.getElementById('startBtn');
     btn.disabled = true;
     document.querySelector('#resultsTable tbody').innerHTML = "";
-    addLog("Lancement de l'extraction profonde...");
+    addLog("Lancement de l'extraction...");
 
     for (let tutor of tutors) {
         addLog(`Analyse de ${tutor.name}...`);
@@ -116,16 +117,19 @@ document.getElementById('startBtn').addEventListener('click', async () => {
         
         const row = `<tr>
             <td>${tutor.name}</td>
-            <td class="${!isNaN(res.count) ? 'success' : 'error'}">${res.count}</td>
+            <td style="font-weight:bold">${res.count}</td>
             <td>${res.info}</td>
         </tr>`;
         document.querySelector('#resultsTable tbody').innerHTML += row;
-        await new Promise(r => setTimeout(r, 600));
+        
+        // Pause de 1.5 seconde pour éviter d'être banni par le proxy
+        await new Promise(r => setTimeout(r, 1500));
     }
 
-    addLog("Terminé.");
+    addLog("Extraction terminée.");
     btn.disabled = false;
 });
+    
 </script>
 </body>
 </html>
