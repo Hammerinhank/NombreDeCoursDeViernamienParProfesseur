@@ -2,22 +2,25 @@ name: Update Preply Counts
 
 on:
   schedule:
-    - cron: '0 8 * * *' # Tous les jours à 8h
-  workflow_dispatch:      # Permet de lancer manuellement
+    - cron: '0 8 * * *'
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    # AJOUT CRITIQUE : Donne l'autorisation d'écrire dans le dépôt
+    # On ajoute cette variable pour dire à GitHub d'utiliser Node 24 tout de suite
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      
     permissions:
       contents: write
       
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4 # Mise à jour vers v4
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v5 # Mise à jour vers v5
+        uses: actions/setup-python@v5
         with:
           python-version: '3.9'
 
