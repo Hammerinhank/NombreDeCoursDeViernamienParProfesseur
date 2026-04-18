@@ -1,1 +1,123 @@
-<html>Hello world!</html>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Suivi des Cours de Vietnamien</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; line-height: 1.6; }
+        .container { max-width: 800px; margin: auto; }
+        button { background: #007bff; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 5px; }
+        button:disabled { background: #ccc; }
+        #log { width: 100%; height: 300px; margin-top: 20px; font-family: monospace; background: #f8f9fa; border: 1px solid #ddd; padding: 10px; overflow-y: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Compteur de Cours par Professeur</h1>
+    <p>Cliquez sur le bouton pour lancer l'analyse (via Proxy).</p>
+    
+    <button id="startBtn">Lancer l'extraction</button>
+
+    <div id="log">En attente de lancement...</div>
+
+    <table id="resultsTable">
+        <thead>
+            <tr>
+                <th>Nom</th>
+                <th>Cours</th>
+                <th>Statut</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+<script>
+const tutors = [
+    {name: "QUYNH", url: "https://preply.com/fr/tuteur/3555405"},
+    {name: "CHI", url: "https://preply.com/fr/tuteur/3788757"},
+    {name: "MAI", url: "https://preply.com/fr/tuteur/5826353"},
+    {name: "HUONG", url: "https://preply.com/fr/tuteur/5590437"},
+    {name: "THU", url: "https://preply.com/fr/tuteur/6100757"},
+    {name: "XUAN", url: "https://preply.com/fr/tuteur/6471628"},
+    {name: "LINH", url: "https://preply.com/fr/tuteur/3621179"},
+    {name: "TRAN", url: "https://preply.com/fr/tuteur/5501608"},
+    {name: "TRANG", url: "https://preply.com/fr/tuteur/6246579"},
+    {name: "YEN", url: "https://preply.com/fr/tuteur/7303777"}
+];
+
+const log = document.getElementById('log');
+const btn = document.getElementById('startBtn');
+const tbody = document.querySelector('#resultsTable tbody');
+
+function addLog(msg) {
+    log.innerHTML += `> ${msg}<br>`;
+    log.scrollTop = log.scrollHeight;
+}
+
+async function fetchCourseCount(tutor) {
+    try {
+        // Utilisation d'un proxy pour contourner CORS
+        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(tutor.url)}`;
+        const response = await fetch(proxyUrl);
+        const data = await response.json();
+        const html = data.contents;
+
+        // Analyse simplifiée du HTML (équivalent BeautifulSoup)
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        
+        // On cherche les structures contenant "cours"
+        let count = "Non trouvé";
+        const containers = doc.querySelectorAll('div');
+        
+        for (let div of containers) {
+            const h4 = div.querySelector('h4');
+            const span = div.querySelector('span');
+            if (h4 && span && span.textContent.toLowerCase().includes('cours')) {
+                const num = h4.textContent.replace(/\s/g, '').replace('\u202f', '');
+                if (!isNaN(parseInt(num))) {
+                    count = parseInt(num);
+                    break;
+                }
+            }
+        }
+        return { count, status: "✅ OK" };
+    } catch (e) {
+        return { count: "Erreur", status: "❌ Bloqué/Erreur" };
+    }
+}
+
+btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    log.innerHTML = "";
+    tbody.innerHTML = "";
+    addLog("Démarrage de l'analyse...");
+
+    for (const tutor of tutors) {
+        addLog(`Analyse de ${tutor.name}...`);
+        const result = await fetchCourseCount(tutor);
+        
+        const row = `<tr>
+            <td>${tutor.name}</td>
+            <td>${result.count}</td>
+            <td>${result.status}</td>
+        </tr>`;
+        tbody.innerHTML += row;
+        
+        // Petite pause pour ne pas saturer le proxy
+        await new Promise(r => setTimeout(r, 500));
+    }
+
+    addLog("Analyse terminée.");
+    btn.disabled = false;
+});
+</script>
+
+</body>
+</html>
