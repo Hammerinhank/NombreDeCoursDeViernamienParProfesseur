@@ -23,18 +23,27 @@
         </table>
     </div>
 
+
     <script>
-        // On charge le fichier JSON généré par le script Python
-        fetch('data.json')
-            .then(response => response.json())
-            .then(data => {
-                const tbody = document.querySelector('#resultTable tbody');
-                data.forEach(item => {
-                    const row = `<tr><td>${item.name}</td><td>${item.count}</td></tr>`;
-                    tbody.innerHTML += row;
-                });
-            })
-            .catch(error => console.error('Erreur:', error));
-    </script>
+    fetch('data.json')
+        .then(response => response.json())
+        .then(data => {
+            // Affichage de la date dans le paragraphe dateUpdate
+            const dateUpdate = document.getElementById('dateUpdate');
+            dateUpdate.innerText = "Dernière mise à jour : " + data.last_update;
+
+            const tbody = document.querySelector('#resultTable tbody');
+            // Attention : on boucle maintenant sur data.tutors
+            data.tutors.forEach(item => {
+                const row = `<tr><td>${item.name}</td><td>${item.count}</td></tr>`;
+                tbody.innerHTML += row;
+            });
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            document.getElementById('dateUpdate').innerText = "Erreur de chargement des données.";
+        });
+</script>
+    
 </body>
 </html>
