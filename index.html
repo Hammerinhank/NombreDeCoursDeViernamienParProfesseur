@@ -2,55 +2,82 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Suivi des Cours de Vietnamien</title>
+    <title>Statistiques Cours Vietnamien</title>
     <style>
-        body { font-family: sans-serif; margin: 40px; background: #f4f4f9; }
-        .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-        th { background: #007bff; color: white; }
+        body { font-family: sans-serif; margin: 20px; background: #f8f9fa; }
+        .section { background: white; padding: 20px; border-radius: 8px; margin-bottom: 30px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9em; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        th { background: #007bff; color: white; position: sticky; top: 0; }
+        tr:nth-child(even) { background: #f2f2f2; }
+        .diff { color: green; font-weight: bold; }
+        .name-col { text-align: left; font-weight: bold; background: #eee; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Nombre de cours par prof</h1>
-        <p id="dateUpdate"></p>
-        <table id="resultTable">
-            <thead>
-                <tr><th>Nom</th><th>Nombre de cours</th></tr>
-            </thead>
-            <tbody></tbody>
-        </table>
+
+    <div class="section">
+        <h2>Derniers 30 Jours (Cumul total)</h2>
+        <div style="overflow-x: auto;">
+            <table id="table30Jours"><thead><tr id="head30"></tr></thead><tbody id="body30"></tbody></table>
+        </div>
     </div>
 
+    <div class="section">
+        <h2>Progression Mensuelle (Cours donnés dans le mois)</h2>
+        <table id="tableMensuelle"><thead><tr id="headMonth"></tr></thead><tbody id="bodyMonth"></tbody></table>
+    </div>
 
 <script>
-    fetch('data.json')
-        .then(response => {
-            if (!response.ok) throw new Error('Fichier non trouvé');
-            return response.json();
-        })
-        .then(data => {
-            const dateUpdate = document.getElementById('dateUpdate');
-            // On vérifie que la date existe bien dans le fichier
-            dateUpdate.innerText = "Dernière mise à jour : " + (data.last_update || "Inconnue");
+    const tutors = ["QUYNH", "CHI", "MAI", "HUONG", "THU", "XUAN", "LINH", "TRAN", "TRANG", "YEN"];
 
-            const tbody = document.querySelector('#resultTable tbody');
-            tbody.innerHTML = ""; // On vide le tableau avant de remplir
-
-            // IMPORTANT : On boucle sur data.tutors et non sur data tout court
-            if (data.tutors && Array.isArray(data.tutors)) {
-                data.tutors.forEach(item => {
-                    const row = `<tr><td>${item.name}</td><td>${item.count}</td></tr>`;
-                    tbody.innerHTML += row;
-                });
-            }
-        })
-        .catch(error => {
-            console.error('Erreur:', error);
-            document.getElementById('dateUpdate').innerText = "Erreur de chargement des données.";
+    fetch('history.json')
+        .then(res => res.json())
+        .then(history => {
+            render30Days(history);
+            renderMonthly(history);
         });
+
+    function render30Days(history) {
+        const last30 = history.slice(-30);
+        const head = document.getElementById('head30');
+        const body = document.getElementById('body30');
+        
+        head.innerHTML = '<th>Professeur</th>' + last30.map(d => `<th>${d.date.split('-')[2]}/${d.date.split('-')[1]}</th>`).join('');
+        
+        tutors.forEach(t => {
+            let row = `<tr><td class="name-col">${t}</td>`;
+            last30.forEach(d => { row += `<td>${d.counts[t] || '-'}</td>`; });
+            body.innerHTML += row + '</tr>';
+        });
+    }
+
+    function renderMonthly(history) {
+        const months = {}; // Groupement par YYYY-MM
+        history.forEach(d => {
+            const m = d.date.substring(0, 7);
+            if (!months[m]) months[m] = [];
+            months[m].push(d);
+        });
+
+        const sortedMonths = Object.keys(months).sort().reverse().slice(0, 36);
+        const head = document.getElementById('headMonth');
+        const body = document.getElementById('bodyMonth');
+
+        head.innerHTML = '<th>Professeur</th>' + sortedMonths.map(m => `<th>${m}</th>`).join('');
+
+        tutors.forEach(t => {
+            let row = `<tr><td class="name-col">${t}</td>`;
+            sortedMonths.forEach(m => {
+                const data = months[m];
+                const first = data[0].counts[t];
+                const last = data[data.length - 1].counts[t];
+                const diff = (first && last) ? (last - first) : 0;
+                row += `<td class="diff">+${diff}</td>`;
+            });
+            body.innerHTML += row + '</tr>';
+        });
+    }
 </script>
-    
 </body>
 </html>
