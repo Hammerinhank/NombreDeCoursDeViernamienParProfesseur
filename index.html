@@ -3,34 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Suivi des Cours de Vietnamien</title>
+    <title>Diagnostic Suivi Vietnamien</title>
     <style>
         body { font-family: sans-serif; margin: 20px; line-height: 1.6; }
-        .container { max-width: 800px; margin: auto; }
+        .container { max-width: 900px; margin: auto; }
         button { background: #007bff; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 5px; }
         button:disabled { background: #ccc; }
-        #log { width: 100%; height: 300px; margin-top: 20px; font-family: monospace; background: #f8f9fa; border: 1px solid #ddd; padding: 10px; overflow-y: auto; }
+        #log { width: 100%; height: 350px; margin-top: 20px; font-family: monospace; background: #1e1e1e; color: #adadad; border: 1px solid #333; padding: 15px; overflow-y: auto; font-size: 12px; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
         th { background-color: #f2f2f2; }
+        .error-detail { color: #ff6b6b; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>Compteur de Cours par Professeur</h1>
-    <p>Cliquez sur le bouton pour lancer l'analyse (via Proxy).</p>
+    <h1>Compteur de Cours - Diagnostic Précis</h1>
+    <p>Cette version analyse le contenu exact reçu pour identifier le blocage.</p>
     
-    <button id="startBtn">Lancer l'extraction</button>
+    <button id="startBtn">Lancer l'analyse détaillée</button>
 
-    <div id="log">En attente de lancement...</div>
+    <div id="log">Console de diagnostic prête...</div>
 
     <table id="resultsTable">
         <thead>
             <tr>
                 <th>Nom</th>
                 <th>Cours</th>
-                <th>Statut</th>
+                <th>Raison Précise du Statut</th>
             </tr>
         </thead>
         <tbody></tbody>
@@ -55,8 +56,9 @@ const log = document.getElementById('log');
 const btn = document.getElementById('startBtn');
 const tbody = document.querySelector('#resultsTable tbody');
 
-function addLog(msg) {
-    log.innerHTML += `> ${msg}<br>`;
+function addLog(msg, isError = false) {
+    const color = isError ? "#ff6b6b" : "#4caf50";
+    log.innerHTML += `<span style="color: ${color}">></span> ${msg}<br>`;
     log.scrollTop = log.scrollHeight;
 }
 
@@ -64,34 +66,35 @@ async function fetchCourseCount(tutor) {
     try {
         const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(tutor.url)}`;
         const response = await fetch(proxyUrl);
-        
-        if (!response.ok) {
-            return { count: "Erreur", status: `❌ Erreur Proxy (${response.status})` };
-        }
-
         const data = await response.json();
         const html = data.contents;
 
-        if (!html) {
-            return { count: "Vide", status: "❌ Page vide (Blocage Preply ?)" };
-        }
+        if (!html) return { count: "---", reason: "Le proxy a renvoyé un contenu vide." };
 
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
+
+        // --- ANALYSE DE LA RAISON DU BLOCAGE ---
         
-        // Diagnostic : Vérifier si on est sur une page de challenge/blocage
-        if (html.includes("Cloudflare") || html.includes("captcha") || doc.title.includes("Attention")) {
-            return { count: "Bloqué", status: "⚠️ Détecté comme Robot par Preply" };
+        // 1. Détection Cloudflare (Protection Bot)
+        if (html.includes("cf-challenge") || html.includes("ray-id") || html.includes("just a moment")) {
+            return { count: "Bloqué", reason: "Interception Cloudflare (Vérification 'Êtes-vous un robot ?')" };
         }
 
-        let count = "Non trouvé";
+        // 2. Détection de page d'erreur spécifique Preply
+        if (doc.title.includes("403") || doc.title.includes("Forbidden") || html.includes("Access Denied")) {
+            return { count: "Refusé", reason: "Accès refusé par Preply (403 Forbidden)" };
+        }
+
+        // 3. Détection de structure HTML vide (JavaScript non exécuté)
+        const appRoot = doc.querySelector('#__next') || doc.querySelector('main');
+        if (appRoot && appRoot.innerHTML === "") {
+            return { count: "Invisible", reason: "Contenu généré par JavaScript (Invisible pour ce script)" };
+        }
+
+        // --- TENTATIVE D'EXTRACTION SI PAS DE BLOCAGE ---
+        let count = null;
         const containers = doc.querySelectorAll('div');
-        
-        // Diagnostic de structure
-        if (containers.length < 10) {
-            addLog(`Structure suspecte pour ${tutor.name} (${containers.length} div trouvées)`);
-        }
-
         for (let div of containers) {
             const h4 = div.querySelector('h4');
             const span = div.querySelector('span');
@@ -103,41 +106,11 @@ async function fetchCourseCount(tutor) {
                 }
             }
         }
-        
-        return { 
-            count, 
-            status: count === "Non trouvé" ? "⚠️ Structure HTML différente" : "✅ OK" 
-        };
 
-    } catch (e) {
-        return { count: "Erreur", status: `❌ Erreur JS: ${e.message.substring(0, 30)}` };
-    }
-}
-
-btn.addEventListener('click', async () => {
-    btn.disabled = true;
-    log.innerHTML = "";
-    tbody.innerHTML = "";
-    addLog("Démarrage de l'analyse...");
-
-    for (const tutor of tutors) {
-        addLog(`Analyse de ${tutor.name}...`);
-        const result = await fetchCourseCount(tutor);
-        
-        const row = `<tr>
-            <td>${tutor.name}</td>
-            <td>${result.count}</td>
-            <td>${result.status}</td>
-        </tr>`;
-        tbody.innerHTML += row;
-        
-        await new Promise(r => setTimeout(r, 800)); // Pause légèrement augmentée
-    }
-
-    addLog("Analyse terminée.");
-    btn.disabled = false;
-});
-</script>
-
-</body>
-</html>
+        if (count !== null) {
+            return { count, reason: "✅ Succès" };
+        } else {
+            // Diagnostic final : si on a du texte mais pas le chiffre
+            const bodyText = doc.body.innerText;
+            if (bodyText.length < 500) {
+                return { count: "Partiel", reason: "Page tron
