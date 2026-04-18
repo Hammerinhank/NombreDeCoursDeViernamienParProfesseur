@@ -24,20 +24,27 @@
     </div>
 
 
-    <script>
+<script>
     fetch('data.json')
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) throw new Error('Fichier non trouvé');
+            return response.json();
+        })
         .then(data => {
-            // Affichage de la date dans le paragraphe dateUpdate
             const dateUpdate = document.getElementById('dateUpdate');
-            dateUpdate.innerText = "Dernière mise à jour : " + data.last_update;
+            // On vérifie que la date existe bien dans le fichier
+            dateUpdate.innerText = "Dernière mise à jour : " + (data.last_update || "Inconnue");
 
             const tbody = document.querySelector('#resultTable tbody');
-            // Attention : on boucle maintenant sur data.tutors
-            data.tutors.forEach(item => {
-                const row = `<tr><td>${item.name}</td><td>${item.count}</td></tr>`;
-                tbody.innerHTML += row;
-            });
+            tbody.innerHTML = ""; // On vide le tableau avant de remplir
+
+            // IMPORTANT : On boucle sur data.tutors et non sur data tout court
+            if (data.tutors && Array.isArray(data.tutors)) {
+                data.tutors.forEach(item => {
+                    const row = `<tr><td>${item.name}</td><td>${item.count}</td></tr>`;
+                    tbody.innerHTML += row;
+                });
+            }
         })
         .catch(error => {
             console.error('Erreur:', error);
