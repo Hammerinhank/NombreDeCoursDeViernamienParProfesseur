@@ -2,18 +2,22 @@ name: Update Preply Counts
 
 on:
   schedule:
-    - cron: '0 8 * * *' # S'exécute tous les jours à 8h du matin
-  workflow_dispatch:      # Permet de le lancer manuellement
+    - cron: '0 8 * * *' # Tous les jours à 8h
+  workflow_dispatch:      # Permet de lancer manuellement
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    # AJOUT CRITIQUE : Donne l'autorisation d'écrire dans le dépôt
+    permissions:
+      contents: write
+      
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4 # Mise à jour vers v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5 # Mise à jour vers v5
         with:
           python-version: '3.9'
 
@@ -27,8 +31,8 @@ jobs:
 
       - name: Commit and push changes
         run: |
-          git config --global user.name "GitHub Action"
-          git config --global user.email "action@github.com"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add data.json
           git commit -m "Mise à jour automatique des cours" || exit 0
           git push
