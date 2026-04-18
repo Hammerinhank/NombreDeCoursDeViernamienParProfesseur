@@ -64,31 +64,53 @@ async function fetchCourseCount(tutor) {
     try {
         const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(tutor.url)}`;
         const response = await fetch(proxyUrl);
+        
+        if (!response.ok) {
+            return { count: "Erreur", status: `❌ Erreur Proxy (${response.status})` };
+        }
+
         const data = await response.json();
         const html = data.contents;
+
+        if (!html) {
+            return { count: "Vide", status: "❌ Page vide (Blocage Preply ?)" };
+        }
 
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
         
+        // Diagnostic : Vérifier si on est sur une page de challenge/blocage
+        if (html.includes("Cloudflare") || html.includes("captcha") || doc.title.includes("Attention")) {
+            return { count: "Bloqué", status: "⚠️ Détecté comme Robot par Preply" };
+        }
+
         let count = "Non trouvé";
+        const containers = doc.querySelectorAll('div');
         
-        // Tentative 1 : Recherche par mot clé "cours" dans tout le texte
-        const allElements = doc.querySelectorAll('h4, span, div, p');
-        for (let el of allElements) {
-            const text = el.textContent.toLowerCase();
-            if (text.includes('cours') && !text.includes('langue')) {
-                // On cherche un chiffre dans le texte ou l'élément parent
-                const match = el.innerText.match(/(\d[\d\s\u202f]*)/);
-                if (match) {
-                    count = match[0].replace(/\s/g, '').replace('\u202f', '');
+        // Diagnostic de structure
+        if (containers.length < 10) {
+            addLog(`Structure suspecte pour ${tutor.name} (${containers.length} div trouvées)`);
+        }
+
+        for (let div of containers) {
+            const h4 = div.querySelector('h4');
+            const span = div.querySelector('span');
+            if (h4 && span && span.textContent.toLowerCase().includes('cours')) {
+                const num = h4.textContent.replace(/\s/g, '').replace('\u202f', '');
+                if (!isNaN(parseInt(num))) {
+                    count = parseInt(num);
                     break;
                 }
             }
         }
         
-        return { count, status: count !== "Non trouvé" ? "✅ OK" : "⚠️ Bloqué par Preply" };
+        return { 
+            count, 
+            status: count === "Non trouvé" ? "⚠️ Structure HTML différente" : "✅ OK" 
+        };
+
     } catch (e) {
-        return { count: "Erreur", status: "❌ Erreur Réseau" };
+        return { count: "Erreur", status: `❌ Erreur JS: ${e.message.substring(0, 30)}` };
     }
 }
 
@@ -109,8 +131,7 @@ btn.addEventListener('click', async () => {
         </tr>`;
         tbody.innerHTML += row;
         
-        // Petite pause pour ne pas saturer le proxy
-        await new Promise(r => setTimeout(r, 500));
+        await new Promise(r => setTimeout(r, 800)); // Pause légèrement augmentée
     }
 
     addLog("Analyse terminée.");
