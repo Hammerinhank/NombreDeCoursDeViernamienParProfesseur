@@ -3,40 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Analyseur Précis Preply</title>
+    <title>Extracteur Autonome Vietnamien</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background: #f4f7f6; }
-        .container { max-width: 1000px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        h1 { color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
-        button { background: #007bff; color: white; border: none; padding: 12px 25px; cursor: pointer; border-radius: 5px; font-size: 16px; transition: 0.3s; }
-        button:hover { background: #0056b3; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 20px; background: #f0f2f5; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 25px; border-radius: 12px; shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h1 { color: #1a73e8; border-bottom: 2px solid #e8f0fe; padding-bottom: 10px; }
+        button { background: #1a73e8; color: white; border: none; padding: 12px 24px; cursor: pointer; border-radius: 6px; font-weight: bold; }
         button:disabled { background: #ccc; }
-        #log { width: 100%; height: 250px; margin-top: 20px; font-family: 'Courier New', monospace; background: #2c3e50; color: #ecf0f1; padding: 15px; overflow-y: auto; border-radius: 5px; font-size: 13px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
-        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-        th { background-color: #007bff; color: white; }
-        tr:nth-child(even) { background-color: #f9f9f9; }
-        .status-box { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
-        .fail { background: #ffebee; color: #c62828; }
-        .success { background: #e8f5e9; color: #2e7d32; }
+        #log { background: #202124; color: #f1f3f4; padding: 15px; border-radius: 8px; height: 200px; overflow-y: auto; font-family: monospace; font-size: 12px; margin: 20px 0; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #dadce0; padding: 12px; text-align: left; }
+        th { background: #f8f9fa; color: #5f6368; }
+        .success { color: #188038; font-weight: bold; }
+        .error { color: #d93025; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>Analyseur de structure HTML (Preply)</h1>
-    <p>Ce script tente d'extraire le nombre de cours et explique précisément pourquoi il échoue le cas échéant.</p>
+    <h1>Suivi des Cours (Mode Autonome)</h1>
+    <p>Cette page tente d'extraire les données directement depuis le code source SEO de Preply.</p>
     
-    <button id="startBtn">Lancer l'autopsie de la page</button>
+    <button id="startBtn">Démarrer l'extraction sans Python</button>
 
-    <div id="log">Prêt pour l'analyse...</div>
+    <div id="log">Console prête...</div>
 
     <table id="resultsTable">
         <thead>
             <tr>
                 <th>Professeur</th>
-                <th>Résultat</th>
-                <th>Explication Technique (Pourquoi ?)</th>
+                <th>Nombre de Cours</th>
+                <th>Méthode / Erreur</th>
             </tr>
         </thead>
         <tbody></tbody>
@@ -57,99 +54,78 @@ const tutors = [
     {name: "YEN", url: "https://preply.com/fr/tuteur/7303777"}
 ];
 
-const log = document.getElementById('log');
-const btn = document.getElementById('startBtn');
-const tbody = document.querySelector('#resultsTable tbody');
-
 function addLog(msg) {
-    const time = new Date().toLocaleTimeString();
-    log.innerHTML += `[${time}] ${msg}<br>`;
+    const log = document.getElementById('log');
+    log.innerHTML += `> ${msg}<br>`;
     log.scrollTop = log.scrollHeight;
 }
 
-async function fetchCourseCount(tutor) {
+async function scrapeTutor(tutor) {
     try {
         const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(tutor.url)}`;
         const response = await fetch(proxyUrl);
         const data = await response.json();
         const html = data.contents;
 
-        if (!html) return { count: "---", reason: "ERREUR : Le proxy n'a rien renvoyé." };
+        if (!html) return { count: "---", info: "Proxy bloqué" };
 
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
 
-        // --- TESTS DE STRUCTURE ---
+        // STRATÉGIE 1 : Recherche dans le texte brut avec une REGEX (plus puissant que chercher des balises)
+        // On cherche un chiffre suivi de "cours" ou "lessons"
+        const regex = /"totalLessons":\s*(\d+)/; 
+        const matchJson = html.match(regex);
         
-        // Test 1: Est-ce que la page est protégée ?
-        if (html.includes("cf-challenge") || html.includes("Cloudflare")) {
-            return { count: "BLOQUÉ", reason: "PROTECTION : Cloudflare bloque l'accès automatique." };
+        if (matchJson && matchJson[1]) {
+            return { count: matchJson[1], info: "Extrait via Data-JSON" };
         }
 
-        // Test 2: Est-ce que les balises <h4> existent ?
-        const allH4 = doc.querySelectorAll('h4');
-        if (allH4.length === 0) {
-            return { count: "VIDE", reason: "STRUCTURE : Aucune balise titre (H4) trouvée. Preply a peut-être changé ses balises en H5 ou DIV." };
-        }
-
-        // Test 3: Recherche du mot "cours"
-        let foundLabel = false;
-        let count = null;
-        
-        for (let h4 of allH4) {
-            // On cherche dans le parent ou le frère pour trouver le texte "cours"
-            const parent = h4.parentElement;
-            if (parent.textContent.toLowerCase().includes('cours')) {
-                foundLabel = true;
-                const num = h4.textContent.replace(/\s/g, '').replace('\u202f', '');
-                if (!isNaN(parseInt(num))) {
-                    count = parseInt(num);
-                    break;
-                }
+        // STRATÉGIE 2 : Recherche dans les balises scripts SEO
+        const scripts = doc.querySelectorAll('script[type="application/ld+json"]');
+        for (let s of scripts) {
+            if (s.textContent.includes('totalLessons') || s.textContent.includes('interactionCount')) {
+                const data = JSON.parse(s.textContent);
+                // La structure varie, on tente de deviner
+                const lessons = data.mainEntity?.interactionStatistic?.userInteractionCount;
+                if (lessons) return { count: lessons, info: "Extrait via SEO-JSON" };
             }
         }
 
-        if (count !== null) {
-            return { count, reason: "SUCCÈS : Donnée extraite normalement." };
-        } 
-        
-        if (foundLabel) {
-            return { count: "?", reason: "FORMAT : Le mot 'cours' est présent, mais le chiffre à côté est illisible ou masqué." };
-        }
+        // STRATÉGIE 3 : Analyse du texte visible simplifié
+        const bodyText = doc.body.innerText || "";
+        const lessonMatch = bodyText.match(/(\d+)\s+cours/i);
+        if (lessonMatch) return { count: lessonMatch[1], info: "Trouvé dans le texte" };
 
-        return { count: "PERDU", reason: "RECHERCHE : La page est chargée mais le texte 'cours' n'est pas associé à un chiffre dans la structure actuelle." };
+        return { count: "Non trouvé", info: "Données masquées par Preply" };
 
     } catch (e) {
-        return { count: "CRASH", reason: "LOGICIEL : Erreur JavaScript -> " + e.message };
+        return { count: "Erreur", info: e.message };
     }
 }
 
-btn.addEventListener('click', async () => {
+document.getElementById('startBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('startBtn');
     btn.disabled = true;
-    log.innerHTML = "";
-    tbody.innerHTML = "";
-    addLog("Début de l'autopsie des pages Preply...");
+    document.querySelector('#resultsTable tbody').innerHTML = "";
+    addLog("Lancement de l'extraction profonde...");
 
-    for (const tutor of tutors) {
-        addLog(`Analyse technique de : ${tutor.name}...`);
-        const result = await fetchCourseCount(tutor);
-        
-        const statusClass = result.count !== "BLOQUÉ" && !isNaN(result.count) ? "success" : "fail";
+    for (let tutor of tutors) {
+        addLog(`Analyse de ${tutor.name}...`);
+        const res = await scrapeTutor(tutor);
         
         const row = `<tr>
-            <td><strong>${tutor.name}</strong></td>
-            <td><span class="status-box ${statusClass}">${result.count}</span></td>
-            <td>${result.reason}</td>
+            <td>${tutor.name}</td>
+            <td class="${!isNaN(res.count) ? 'success' : 'error'}">${res.count}</td>
+            <td>${res.info}</td>
         </tr>`;
-        tbody.innerHTML += row;
-        
-        await new Promise(r => setTimeout(r, 800));
+        document.querySelector('#resultsTable tbody').innerHTML += row;
+        await new Promise(r => setTimeout(r, 600));
     }
 
-    addLog("Analyse terminée.");
+    addLog("Terminé.");
     btn.disabled = false;
 });
 </script>
-
 </body>
 </html>
