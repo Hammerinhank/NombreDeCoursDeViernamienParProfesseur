@@ -1,48 +1,62 @@
 import json
-from datetime import datetime # Ajout de l'import
+import os
+from datetime import datetime
 from playwright.sync_api import sync_playwright
 
-tutors = [
-    {"name": "QUYNH", "url": "https://preply.com/fr/tuteur/3555405"},
-    {"name": "CHI",   "url": "https://preply.com/fr/tuteur/3788757"},
-    {"name": "MAI",   "url": "https://preply.com/fr/tuteur/5826353"},
-    {"name": "HUONG", "url": "https://preply.com/fr/tuteur/5590437"},
-    {"name": "THU",   "url": "https://preply.com/fr/tuteur/6100757"},
-    {"name": "XUAN",  "url": "https://preply.com/fr/tuteur/6471628"},
-    {"name": "LINH",  "url": "https://preply.com/fr/tuteur/3621179"},
-    {"name": "TRAN",  "url": "https://preply.com/fr/tuteur/5501608"},
-    {"name": "TRANG", "url": "https://preply.com/fr/tuteur/6246579"},
-    {"name": "YEN",   "url": "https://preply.com/fr/tuteur/7303777"},
-]
+tutors_list = ["QUYNH", "CHI", "MAI", "HUONG", "THU", "XUAN", "LINH", "TRAN", "TRANG", "YEN"]
+urls = {
+    "QUYNH": "https://preply.com/fr/tuteur/3555405",
+    "CHI": "https://preply.com/fr/tuteur/3788757",
+    "MAI": "https://preply.com/fr/tuteur/5826353",
+    "HUONG": "https://preply.com/fr/tuteur/5590437",
+    "THU": "https://preply.com/fr/tuteur/6100757",
+    "XUAN": "https://preply.com/fr/tuteur/6471628",
+    "LINH": "https://preply.com/fr/tuteur/3621179",
+    "TRAN": "https://preply.com/fr/tuteur/5501608",
+    "TRANG": "https://preply.com/fr/tuteur/6246579",
+    "YEN": "https://preply.com/fr/tuteur/7303777"
+}
 
-def get_counts():
-    results = []
+def fetch_data():
+    today = datetime.now().strftime("%Y-%m-%d")
+    new_entry = {"date": today, "counts": {}}
+    
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         context = browser.new_context(user_agent="Mozilla/5.0")
-        for tutor in tutors:
+        for name in tutors_list:
             try:
                 page = context.new_page()
-                page.goto(tutor["url"], timeout=60000)
-                page.wait_for_load_state("networkidle")
-                # On cherche le chiffre dans le texte de la page
+                page.goto(urls[name], timeout=60000)
                 content = page.content()
                 import re
                 match = re.search(r'"totalLessons":\s*(\d+)', content)
-                count = match.group(1) if match else "Non trouvé"
-                results.append({"name": tutor["name"], "count": count})
+                new_entry["counts"][name] = int(match.group(1)) if match else None
                 page.close()
-            except Exception as e:
-                results.append({"name": tutor["name"], "count": "Erreur"})
+            except:
+                new_entry["counts"][name] = None
         browser.close()
-    return results
+    return new_entry
 
 if __name__ == "__main__":
-    results = get_counts()
-    # On crée un dictionnaire qui contient la date ET les résultats
-    final_data = {
-        "last_update": datetime.now().strftime("%d/%m/%Y à %H:%M"),
-        "tutors": results
-    }
-    with open("data.json", "w", encoding="utf-8") as f:
-        json.dump(final_data, f, ensure_ascii=False, indent=4)
+    history_file = "history.json"
+    
+    # Charger l'historique existant ou créer une liste vide
+    if os.path.exists(history_file):
+        with open(history_file, "r", encoding="utf-8") as f:
+            history = json.load(f)
+    else:
+        history = []
+
+    # Ajouter les données du jour
+    new_data = fetch_data()
+    
+    # Éviter les doublons si le script tourne deux fois le même jour
+    history = [entry for entry in history if entry['date'] != new_data['date']]
+    history.append(new_data)
+    
+    # Garder seulement les 40 derniers mois pour ne pas alourdir (environ 1200 entrées)
+    history = history[-1200:]
+
+    with open(history_file, "w", encoding="utf-8") as f:
+        json.dump(history, f, ensure_ascii=False, indent=2)
