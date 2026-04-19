@@ -38,19 +38,43 @@
             renderMonthly(history);
         });
 
-    function render30Days(history) {
-        const last30 = history.slice(-30);
-        const head = document.getElementById('head30');
-        const body = document.getElementById('body30');
+function render30Days(history) {
+    const last30 = history.slice(-30);
+    const head = document.getElementById('head30');
+    const body = document.getElementById('body30');
+    
+    // Génération de l'en-tête (Dates)
+    head.innerHTML = '<th>Professeur</th>' + last30.map(d => `<th>${d.date.split('-')[2]}/${d.date.split('-')[1]}</th>`).join('');
+    
+    tutors.forEach(t => {
+        let row = `<tr><td class="name-col">${t}</td>`;
         
-        head.innerHTML = '<th>Professeur</th>' + last30.map(d => `<th>${d.date.split('-')[2]}/${d.date.split('-')[1]}</th>`).join('');
-        
-        tutors.forEach(t => {
-            let row = `<tr><td class="name-col">${t}</td>`;
-            last30.forEach(d => { row += `<td>${d.counts[t] || '-'}</td>`; });
-            body.innerHTML += row + '</tr>';
+        last30.forEach((d, index) => {
+            const currentVal = d.counts[t];
+            let bgColor = "transparent"; // Par défaut
+            let fontColor = "black";
+            
+            // Calcul de l'écart avec le jour précédent
+            if (index > 0 && currentVal !== null) {
+                const prevVal = last30[index - 1].counts[t];
+                if (prevVal !== null && currentVal > prevVal) {
+                    const diff = currentVal - prevVal;
+                    
+                    // Réglage de l'intensité du vert (Opacité de 0.1 à 0.9)
+                    // On sature à partir de 10 cours d'écart
+                    const intensity = Math.min(diff / 10, 1); 
+                    bgColor = `rgba(40, 167, 69, ${0.1 + (intensity * 0.8)})`;
+                    if (intensity > 0.6) fontColor = "white"; // Texte blanc si fond trop sombre
+                }
+            }
+            
+            row += `<td style="background-color: ${bgColor}; color: ${fontColor}; transition: all 0.3s;">
+                        ${currentVal || '-'}
+                    </td>`;
         });
-    }
+        body.innerHTML += row + '</tr>';
+    });
+}
 
     function renderMonthly(history) {
         const months = {}; // Groupement par YYYY-MM
