@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 from playwright.sync_api import sync_playwright
 
-tutors_list = ["QUYNH", "CHI", "MAI", "HUONG", "THU", "XUAN", "LINH", "TRAN", "TRANG", "YEN"]
+tutors_list = ["QUYNH", "CHI", "MAI", "HUONG", "THU", "XUAN", "LINH", "TRAN", "TRANG", "YEN" , "THUY"]
 urls = {
     "QUYNH": "https://preply.com/fr/tuteur/3555405",
     "CHI": "https://preply.com/fr/tuteur/3788757",
@@ -14,7 +14,8 @@ urls = {
     "LINH": "https://preply.com/fr/tuteur/3621179",
     "TRAN": "https://preply.com/fr/tuteur/5501608",
     "TRANG": "https://preply.com/fr/tuteur/6246579",
-    "YEN": "https://preply.com/fr/tuteur/7303777"
+    "YEN": "https://preply.com/fr/tuteur/7303777",
+    "THUY": "https://preply.com/fr/tuteur/7140491"
 }
 
 def fetch_data():
