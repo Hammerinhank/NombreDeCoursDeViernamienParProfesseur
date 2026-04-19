@@ -51,25 +51,29 @@ function render30Days(history) {
         
         last30.forEach((d, index) => {
             const currentVal = d.counts[t];
-            let bgColor = "transparent"; // Par défaut
+            let bgColor = "transparent";
             let fontColor = "black";
+            let displayValue = currentVal || '-';
             
             // Calcul de l'écart avec le jour précédent
             if (index > 0 && currentVal !== null) {
                 const prevVal = last30[index - 1].counts[t];
+                
                 if (prevVal !== null && currentVal > prevVal) {
                     const diff = currentVal - prevVal;
                     
-                    // Réglage de l'intensité du vert (Opacité de 0.1 à 0.9)
-                    // On sature à partir de 10 cours d'écart
+                    // 1. Calcul de la couleur (Heatmap)
                     const intensity = Math.min(diff / 10, 1); 
                     bgColor = `rgba(40, 167, 69, ${0.1 + (intensity * 0.8)})`;
-                    if (intensity > 0.6) fontColor = "white"; // Texte blanc si fond trop sombre
+                    if (intensity > 0.6) fontColor = "white"; 
+
+                    // 2. Ajout de l'écart entre parenthèses
+                    displayValue = `${currentVal} <small>(+${diff})</small>`;
                 }
             }
             
-            row += `<td style="background-color: ${bgColor}; color: ${fontColor}; transition: all 0.3s;">
-                        ${currentVal || '-'}
+            row += `<td style="background-color: ${bgColor}; color: ${fontColor}; transition: all 0.3s; white-space: nowrap;">
+                        ${displayValue}
                     </td>`;
         });
         body.innerHTML += row + '</tr>';
