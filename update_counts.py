@@ -50,6 +50,11 @@ if __name__ == "__main__":
 
     # Ajouter les données du jour
     new_data = fetch_data()
+
+    # Ajoutez ces 3 lignes ici :
+    print("--- DIAGNOSTIC DATA ---")
+    print(new_data)
+    print("-----------------------")
     
     # Éviter les doublons si le script tourne deux fois le même jour
     history = [entry for entry in history if entry['date'] != new_data['date']]
