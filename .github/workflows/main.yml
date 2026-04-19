@@ -2,7 +2,7 @@ name: Update Preply Counts
 
 on:
   schedule:
-    - cron: '0 8 * * *' # Exécution automatique tous les jours à 8h (UTC)
+    - cron: '43 1 * * *' # Exécution automatique tous les jours à 8h (UTC)
   workflow_dispatch:      # Permet de lancer le script manuellement
 
 jobs:
