@@ -17,7 +17,7 @@
 <body>
 
     <div class="section">
-        <h2>Derniers 30 Jours (Cumul total) V1.4</h2>
+        <h2>Derniers 30 Jours (Cumul total) V1.5</h2>
         <div style="overflow-x: auto;">
             <table id="table30Jours"><thead><tr id="head30"></tr></thead><tbody id="body30"></tbody></table>
         </div>
@@ -45,12 +45,34 @@ function render30Days(history) {
     
     // Génération de l'en-tête (Dates)
     // Génération de l'en-tête (Dates sur une ligne, Heures sur la ligne du dessous)
+    // Génération de l'en-tête avec Date et les 3 Fuseaux Horaires
     head.innerHTML = '<th>Professeur</th>' + last30.map(d => {
-        // Extraction de l'heure (HH:mm) depuis last_updated s'il existe
-        const time = d.last_updated ? d.last_updated.split('T')[1].substring(0, 5) : '--:--';
         const dateFormatted = `${d.date.split('-')[2]}/${d.date.split('-')[1]}`;
         
-        return `<th>${dateFormatted}<br><small style="font-weight: normal; opacity: 0.8;">${time} UTC</small></th>`;
+        if (!d.last_updated) {
+            return `<th>${dateFormatted}<br><small>--:--</small></th>`;
+        }
+
+        // Création d'un objet Date à partir de la chaîne UTC
+        const dateObj = new Date(d.last_updated);
+
+        // Options pour extraire l'heure dans différents fuseaux
+        const optParis = { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' };
+        const optVietnam = { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Ho_Chi_Minh' };
+        const optUTC = { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' };
+
+        const timeUTC = dateObj.toLocaleTimeString('fr-FR', optUTC);
+        const timeParis = dateObj.toLocaleTimeString('fr-FR', optParis);
+        const timeVN = dateObj.toLocaleTimeString('fr-FR', optVietnam);
+
+        return `<th>
+            ${dateFormatted}<br>
+            <small style="font-weight: normal; color: #666; display: block; margin-top: 4px;">
+                ${timeUTC} UTC<br>
+                ${timeParis} PAR<br>
+                ${timeVN} VN
+            </small>
+        </th>`;
     }).join('');
     
     tutors.forEach(t => {
