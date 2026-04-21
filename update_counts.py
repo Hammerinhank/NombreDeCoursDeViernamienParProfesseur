@@ -43,9 +43,12 @@ if __name__ == "__main__":
     history_file = "history.json"
     
     # Charger l'historique existant ou créer une liste vide
+    # Charger l'historique existant
     if os.path.exists(history_file):
         with open(history_file, "r", encoding="utf-8") as f:
-            history = json.load(f)
+            content = json.load(f)
+            # Cette ligne gère la transition de l'ancien vers le nouveau format
+            history = content.get("history", content) if isinstance(content, dict) else content
     else:
         history = []
 
@@ -64,5 +67,11 @@ if __name__ == "__main__":
     # Garder seulement les 40 derniers mois pour ne pas alourdir (environ 1200 entrées)
     history = history[-1200:]
 
+# Création de la nouvelle structure avec l'horodatage UTC
+    final_data = {
+        "last_updated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "history": history
+    }
+
     with open(history_file, "w", encoding="utf-8") as f:
-        json.dump(history, f, ensure_ascii=False, indent=2)
+        json.dump(final_data, f, ensure_ascii=False, indent=2)
