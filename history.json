@@ -1,65 +1,68 @@
-[
-  {
-    "date": "2026-04-18",
-    "counts": {
-      "QUYNH": 3675,
-      "CHI": 1874,
-      "MAI": 545,
-      "HUONG": 801,
-      "THU": 726,
-      "XUAN": 109,
-      "LINH": 6727,
-      "TRAN": 45,
-      "TRANG": 270,
-      "YEN": 81
+{
+  "last_updated": "2026-04-21T06:43:21Z",
+  "history": [
+    {
+      "date": "2026-04-18",
+      "counts": {
+        "QUYNH": 3675,
+        "CHI": 1874,
+        "MAI": 545,
+        "HUONG": 801,
+        "THU": 726,
+        "XUAN": 109,
+        "LINH": 6727,
+        "TRAN": 45,
+        "TRANG": 270,
+        "YEN": 81
+      }
+    },
+    {
+      "date": "2026-04-19",
+      "counts": {
+        "QUYNH": 3676,
+        "CHI": 1874,
+        "MAI": 546,
+        "HUONG": 801,
+        "THU": 730,
+        "XUAN": 109,
+        "LINH": 6731,
+        "TRAN": 45,
+        "TRANG": 271,
+        "YEN": 82,
+        "THUY": 7
+      }
+    },
+    {
+      "date": "2026-04-20",
+      "counts": {
+        "QUYNH": 3676,
+        "CHI": 1882,
+        "MAI": 546,
+        "HUONG": 801,
+        "THU": 731,
+        "XUAN": 109,
+        "LINH": 6734,
+        "TRAN": 45,
+        "TRANG": 271,
+        "YEN": 84,
+        "THUY": 8
+      }
+    },
+    {
+      "date": "2026-04-21",
+      "counts": {
+        "QUYNH": 3679,
+        "CHI": 1885,
+        "MAI": 546,
+        "HUONG": 801,
+        "THU": 731,
+        "XUAN": 109,
+        "LINH": 6743,
+        "TRAN": 45,
+        "TRANG": 273,
+        "YEN": 86,
+        "THUY": 8
+      }
     }
-  },
-  {
-    "date": "2026-04-19",
-    "counts": {
-      "QUYNH": 3676,
-      "CHI": 1874,
-      "MAI": 546,
-      "HUONG": 801,
-      "THU": 730,
-      "XUAN": 109,
-      "LINH": 6731,
-      "TRAN": 45,
-      "TRANG": 271,
-      "YEN": 82,
-      "THUY": 7
-    }
-  },
-  {
-    "date": "2026-04-20",
-    "counts": {
-      "QUYNH": 3676,
-      "CHI": 1882,
-      "MAI": 546,
-      "HUONG": 801,
-      "THU": 731,
-      "XUAN": 109,
-      "LINH": 6734,
-      "TRAN": 45,
-      "TRANG": 271,
-      "YEN": 84,
-      "THUY": 8
-    }
-  },
-  {
-    "date": "2026-04-21",
-    "counts": {
-      "QUYNH": 3677,
-      "CHI": 1885,
-      "MAI": 546,
-      "HUONG": 801,
-      "THU": 731,
-      "XUAN": 109,
-      "LINH": 6743,
-      "TRAN": 45,
-      "TRANG": 273,
-      "YEN": 86,
-      "THUY": 8
-    }
-  }
-]
+  ]
+}
