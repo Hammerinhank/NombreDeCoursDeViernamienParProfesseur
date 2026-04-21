@@ -44,7 +44,14 @@ function render30Days(history) {
     const body = document.getElementById('body30');
     
     // Génération de l'en-tête (Dates)
-    head.innerHTML = '<th>Professeur</th>' + last30.map(d => `<th>${d.date.split('-')[2]}/${d.date.split('-')[1]}</th>`).join('');
+    // Génération de l'en-tête (Dates sur une ligne, Heures sur la ligne du dessous)
+    head.innerHTML = '<th>Professeur</th>' + last30.map(d => {
+        // Extraction de l'heure (HH:mm) depuis last_updated s'il existe
+        const time = d.last_updated ? d.last_updated.split('T')[1].substring(0, 5) : '--:--';
+        const dateFormatted = `${d.date.split('-')[2]}/${d.date.split('-')[1]}`;
+        
+        return `<th>${dateFormatted}<br><small style="font-weight: normal; opacity: 0.8;">${time} UTC</small></th>`;
+    }).join('');
     
     tutors.forEach(t => {
         let row = `<tr><td class="name-col">${t}</td>`;
