@@ -18,7 +18,7 @@
 
     <div class="section">  
         <!-- /////////////////////////////////////////////// -->
-        <h2>Derniers 30 Jours (Cumul total) V1.8  </h2>
+        <h2>Derniers 30 Jours (Cumul total) V1.9  </h2>
         <!-- /////////////////////////////////////////////// -->
         <div style="overflow-x: auto;">
             <table id="table30Jours"><thead><tr id="head30"></tr></thead><tbody id="body30"></tbody></table>
@@ -127,10 +127,16 @@ function render30Days(history) {
         tutors.forEach(t => {
             let row = `<tr><td class="name-col">${t}</td>`;
             sortedMonths.forEach(m => {
-                const data = months[m];
-                const first = data[0].counts[t];
-                const last = data[data.length - 1].counts[t];
-                const diff = (first && last) ? (last - first) : 0;
+
+            const data = months[m];
+                
+                // Cherche la première et la dernière valeur existante pour ce prof dans le mois
+                const first = data.find(d => d.counts[t] !== undefined)?.counts[t];
+                const last = [...data].reverse().find(d => d.counts[t] !== undefined)?.counts[t];
+                
+                const diff = (first !== undefined && last !== undefined) ? (last - first) : 0;
+
+                
                 row += `<td class="diff">+${diff}</td>`;
             });
             body.innerHTML += row + '</tr>';
