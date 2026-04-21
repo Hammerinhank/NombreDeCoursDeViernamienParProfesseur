@@ -20,7 +20,12 @@ urls = {
 
 def fetch_data():
     today = datetime.now().strftime("%Y-%m-%d")
-    new_entry = {"date": today, "counts": {}}
+    # On insère l'heure ici, elle sera ainsi liée à la date du jour
+    new_entry = {
+        "date": today, 
+        "last_updated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"), 
+        "counts": {}
+    }
     
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
@@ -42,13 +47,10 @@ def fetch_data():
 if __name__ == "__main__":
     history_file = "history.json"
     
-    # Charger l'historique existant ou créer une liste vide
-    # Charger l'historique existant
+# Charger l'historique existant ou créer une liste vide
     if os.path.exists(history_file):
         with open(history_file, "r", encoding="utf-8") as f:
-            content = json.load(f)
-            # Cette ligne gère la transition de l'ancien vers le nouveau format
-            history = content.get("history", content) if isinstance(content, dict) else content
+            history = json.load(f)  # On recharge directement la liste
     else:
         history = []
 
@@ -67,11 +69,5 @@ if __name__ == "__main__":
     # Garder seulement les 40 derniers mois pour ne pas alourdir (environ 1200 entrées)
     history = history[-1200:]
 
-# Création de la nouvelle structure avec l'horodatage UTC
-    final_data = {
-        "last_updated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "history": history
-    }
-
     with open(history_file, "w", encoding="utf-8") as f:
-        json.dump(final_data, f, ensure_ascii=False, indent=2)
+        json.dump(history, f, ensure_ascii=False, indent=2) # On sauvegarde la liste directement
