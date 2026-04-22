@@ -18,7 +18,7 @@
 
     <div class="section">  
         <!-- /////////////////////////////////////////////// -->
-        <h2>Derniers 30 Jours (V1.9)  </h2>
+        <h2>Derniers 30 Jours (V1.10)  </h2>
         <!-- /////////////////////////////////////////////// -->
         <div style="overflow-x: auto;">
             <table id="table30Jours"><thead><tr id="head30"></tr></thead><tbody id="body30"></tbody></table>
@@ -41,6 +41,7 @@
         });
 
 function render30Days(history) {
+
     const last30 = history.slice(-30);
     const head = document.getElementById('head30');
     const body = document.getElementById('body30');
@@ -48,8 +49,11 @@ function render30Days(history) {
     // Génération de l'en-tête (Dates)
     // Génération de l'en-tête (Dates sur une ligne, Heures sur la ligne du dessous)
     // Génération de l'en-tête avec Date et les 3 Fuseaux Horaires
+    const jours = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
     head.innerHTML = '<th>Professeur</th>' + last30.map(d => {
-        const dateFormatted = `${d.date.split('-')[2]}/${d.date.split('-')[1]}`;
+        const parts = d.date.split('-');
+        const jsDate = new Date(parts[0], parts[1] - 1, parts[2]);
+        const dateFormatted = `${jours[jsDate.getDay()]} ${parts[2]}/${parts[1]}`;
         
         if (!d.last_updated) {
             return `<th>${dateFormatted}<br><small>--:--</small></th>`;
