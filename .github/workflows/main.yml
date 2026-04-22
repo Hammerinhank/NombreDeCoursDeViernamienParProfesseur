@@ -2,7 +2,7 @@ name: Update Preply Counts
 
 on:
   schedule:
-    - cron: '43 17 * * *' # Exécution à 17h00 UTC, soit 00h43 au Vietnam
+    - cron: '43 17 * * *' # Exécution à 17h43 UTC, soit 00h43 au Vietnam
   workflow_dispatch:      # Permet de lancer le script manuellement
 
 jobs:
