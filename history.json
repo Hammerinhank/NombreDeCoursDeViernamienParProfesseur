@@ -96,5 +96,22 @@
       "YEN": 90,
       "THUY": 9
     }
+  },
+  {
+    "date": "2026-04-24",
+    "last_updated": "2026-04-24T18:28:33Z",
+    "counts": {
+      "QUYNH": 3689,
+      "CHI": 1896,
+      "MAI": 549,
+      "HUONG": 801,
+      "THU": 735,
+      "XUAN": 109,
+      "LINH": 6771,
+      "TRAN": 45,
+      "TRANG": 275,
+      "YEN": 91,
+      "THUY": 9
+    }
   }
 ]
