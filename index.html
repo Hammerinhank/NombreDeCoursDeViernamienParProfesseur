@@ -12,6 +12,40 @@
         tr:nth-child(even) { background: #f2f2f2; }
         .diff { color: green; font-weight: bold; }
         .name-col { text-align: left; font-weight: bold; background: #eee; }
+
+
+        /* Configuration pour permettre le figement des colonnes */
+        table {
+            border-collapse: separate; /* Indispensable à la place de 'collapse' */
+            border-spacing: 0;
+        }
+        
+        /* Figer la première colonne pour les deux tableaux */
+        #table30Jours th:first-child,
+        #table30Jours .name-col,
+        #tableMensuelle th:first-child,
+        #tableMensuelle .name-col {
+            position: sticky;
+            left: 0;
+            z-index: 2; /* Passe au-dessus des autres cellules lors du scroll */
+        }
+        
+        /* Gestion spécifique de l'en-tête (le coin "Professeur") */
+        #table30Jours th:first-child,
+        #tableMensuelle th:first-child {
+            z-index: 3; /* Doit être plus élevé que la ligne d'en-tête ET la colonne */
+            background-color: #007bff; /* Maintient la couleur bleue du header */
+        }
+        
+        /* S'assurer que le fond des noms est opaque */
+        .name-col {
+            background-color: #eee !important; /* Évite de voir les chiffres par transparence */
+            border-right: 2px solid #ddd; /* Optionnel : marque la séparation au scroll */
+        }
+
+
+
+        
     </style>
 </head>
 <body>
@@ -27,7 +61,12 @@
 
     <div class="section">
         <h2>Progression Mensuelle (Cours donnés dans le mois)</h2>
-        <table id="tableMensuelle"><thead><tr id="headMonth"></tr></thead><tbody id="bodyMonth"></tbody></table>
+        <div style="overflow-x: auto;">
+            <table id="tableMensuelle">
+                <thead><tr id="headMonth"></tr></thead>
+                <tbody id="bodyMonth"></tbody>
+            </table>
+        </div>
     </div>
 
 <script>
